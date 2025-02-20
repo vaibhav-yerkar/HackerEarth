@@ -2,9 +2,13 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 from backend.modules.database import Database
 from backend.modules.model import Student, Grade, Attendance
+from backend.modules.chatbot import ParentalMonitoringSystem
+from backend.modules.audio_notes import AudioGenerator
 
 app = FastAPI(title="Student Management API")
 db = Database()
+chatbot = ParentalMonitoringSystem(api_key="your_api_key")
+audio_generator = AudioGenerator()
 
 @app.post("/add_student")
 def add_student(student: Student):
@@ -50,6 +54,19 @@ def modify_student(student_id: int, student: Student):
 @app.put("/modify_remark/{student_id}")
 def modify_remark(student_id: int, remark: str):
     return db.modify_remark(student_id, remark)
+
+@app.post("/chatbot")
+def chatbot_response(question: str, student_id: int):
+    context_text = chatbot.get_context_text(question, student_id)
+    response = chatbot.generate_response(question, context_text)
+    return {"response": response}
+
+@app.post("/generate-audio/")
+def generate_audio(text: str, lang: str = "en"):
+    audio = audio_generator.generate_audio(text, lang)
+    if audio:
+        return {"message": "Audio generated successfully"}
+    raise HTTPException(status_code=500, detail="Failed to generate audio")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
