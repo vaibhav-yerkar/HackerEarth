@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
+import ApiService from "../services/api";
 
 function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -7,25 +8,44 @@ function ChatBot() {
     Array<{ text: string; isUser: boolean }>
   >([{ text: "Hi! How can I help you today?", isUser: false }]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
 
-    // Add user message
+    // Get student_id from cache or use 0
+    const student_id = localStorage.getItem("student_id") || "0";
+
+    // Add user message immediately
     setMessages((prev) => [...prev, { text: inputMessage, isUser: true }]);
+    setIsLoading(true);
 
-    // Simulate bot response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      // Make API call to chatbot endpoint
+      const response = await ApiService.get<{ response: string }>(
+        `/chatbot?question=${encodeURIComponent(
+          inputMessage
+        )}&student_id=${student_id}`
+      );
+
+      // Add bot response
+      setMessages((prev) => [
+        ...prev,
+        { text: response.response, isUser: false },
+      ]);
+    } catch (error) {
+      console.error("Chatbot API error:", error);
       setMessages((prev) => [
         ...prev,
         {
-          text: "Thanks for your message! This is a demo response.",
+          text: "Sorry, I'm having trouble responding right now.",
           isUser: false,
         },
       ]);
-    }, 1000);
-
-    setInputMessage("");
+    } finally {
+      setIsLoading(false);
+      setInputMessage("");
+    }
   };
 
   return (
@@ -63,6 +83,17 @@ function ChatBot() {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-800 rounded-lg px-4 py-2">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Input */}
@@ -74,11 +105,13 @@ function ChatBot() {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                 placeholder="Type your message..."
-                className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                disabled={isLoading}
+                className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:bg-gray-100"
               />
               <button
                 onClick={handleSendMessage}
-                className="bg-indigo-400 text-white p-2 rounded-lg hover:bg-indigo-500"
+                disabled={isLoading}
+                className="bg-indigo-400 text-white p-2 rounded-lg hover:bg-indigo-500 disabled:bg-gray-300"
               >
                 <Send className="h-5 w-5" />
               </button>

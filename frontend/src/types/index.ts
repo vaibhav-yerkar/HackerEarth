@@ -90,3 +90,12 @@ export interface AttendanceSummary {
   absentDays: number;
   presentRate: number;
 }
+
+export interface StudentListEntry {
+  student_id: string;
+  name: string;
+}
+
+export interface StudentListResponse {
+  students: StudentListEntry[];
+}

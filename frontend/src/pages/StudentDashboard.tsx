@@ -7,6 +7,7 @@ import {
   AttendanceEntry,
   ScoreResponse,
   StudentProfile,
+  StudentListResponse,
 } from "../types";
 import {
   LineChart,
@@ -18,10 +19,20 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Calendar, GraduationCap, UserCheck } from "lucide-react";
+import { Calendar, GraduationCap, UserCheck, Edit2, Save } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAppStore } from "../store/index";
 
 function StudentDashboard() {
+  const user = useAppStore((state) => state.user);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null
+  );
+  const [studentsList, setStudentsList] = useState<
+    StudentListResponse["students"]
+  >([]);
+  const [isEditingRemark, setIsEditingRemark] = useState(false);
+  const [newRemark, setNewRemark] = useState("");
   const [highlightedSubject, setHighlightedSubject] = useState<string | null>(
     null
   );
@@ -33,6 +44,7 @@ function StudentDashboard() {
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
     null
   );
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
 
   // Transform API response data into the format needed for the chart
   const transformScoreData = (
@@ -86,34 +98,81 @@ function StudentDashboard() {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const studentId = localStorage.getItem("student_id");
-        if (!studentId) {
-          throw new Error("Student ID not found");
+    if (user?.role === "teacher") {
+      setIsLoadingStudents(true);
+      // Load students list from cache or fetch
+      const cachedStudents = localStorage.getItem(
+        "cache_GET_/get_all_students"
+      );
+      if (cachedStudents) {
+        try {
+          const studentsData = JSON.parse(cachedStudents);
+          setStudentsList(studentsData.data.Students || []);
+        } catch (error) {
+          console.error("Error parsing cached students data:", error);
+          setStudentsList([]);
         }
+      } else {
+        // Optionally fetch from API if not in cache
+        ApiService.get<StudentListResponse>("/get_all_students")
+          .then((response) => {
+            setStudentsList(response.Students || []);
+          })
+          .catch((error) => {
+            console.error("Error fetching students:", error);
+            setStudentsList([]);
+          });
+      }
+      setIsLoadingStudents(false);
+    } else {
+      setSelectedStudentId(localStorage.getItem("student_id"));
+    }
+  }, [user?.role]);
 
-        // Even if one fetch fails, continue with the other
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!selectedStudentId) return;
+
+      setIsLoading(true);
+      try {
         const [scoresResponse, attendanceResponse] = await Promise.allSettled([
-          ApiService.get<ScoreResponse>(`/get_student_score/${studentId}`),
+          ApiService.get<ScoreResponse>(
+            `/get_student_score/${selectedStudentId}`
+          ),
           ApiService.get<AttendanceResponse>(
-            `/get_student_attendance/${studentId}`
+            `/get_student_attendance/${selectedStudentId}`
           ),
         ]);
 
-        if (scoresResponse.status === "fulfilled") {
+        if (
+          scoresResponse.status === "fulfilled" &&
+          scoresResponse.value?.Scores
+        ) {
           const formattedData = transformScoreData(scoresResponse.value.Scores);
           setPerformanceData(formattedData);
+        } else {
+          console.error("Failed to fetch scores or scores data is missing");
+          setPerformanceData([]);
         }
 
-        if (attendanceResponse.status === "fulfilled") {
+        if (
+          attendanceResponse.status === "fulfilled" &&
+          attendanceResponse.value?.Attendance
+        ) {
           const summary = calculateAttendanceSummary(
             attendanceResponse.value.Attendance
           );
           setAttendanceSummary(summary);
+        } else {
+          console.error(
+            "Failed to fetch attendance or attendance data is missing"
+          );
+          setAttendanceSummary(null);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+        setPerformanceData([]);
+        setAttendanceSummary(null);
       } finally {
         setIsLoading(false);
       }
@@ -142,21 +201,109 @@ function StudentDashboard() {
         handleCacheHit as EventListener
       );
     };
-  }, []);
+  }, [selectedStudentId]);
 
   useEffect(() => {
     const fetchStudentProfile = () => {
+      if (!selectedStudentId) return;
+
+      // Get profile from get_all_students cache
+      const cachedStudents = localStorage.getItem(
+        "cache_GET_/get_all_students"
+      );
+      if (cachedStudents) {
+        try {
+          const studentsData = JSON.parse(cachedStudents);
+          const selectedStudent = studentsData.data.Students.find(
+            (student: any) => student.student_id === selectedStudentId
+          );
+
+          if (selectedStudent) {
+            setStudentProfile({
+              ...selectedStudent,
+              Remark: selectedStudent.Remark || null,
+              // Add any other required fields with default values if needed
+              dob: selectedStudent.dob || "",
+              class_id: selectedStudent.class_id || "",
+              class_teacher: selectedStudent.class_teacher || "",
+              guardian_name: selectedStudent.guardian_name || "",
+              guardian_mob: selectedStudent.guardian_mob || "",
+              guardian_mail: selectedStudent.guardian_mail || "",
+              student_gender: selectedStudent.student_gender || "",
+            });
+            return; // Exit if we found the student in cache
+          }
+        } catch (error) {
+          console.error("Error parsing cached students data:", error);
+        }
+      }
+
+      // Fallback to profile API only if cache miss or error
       const cachedProfile = localStorage.getItem(
-        "cache_GET_/get_students_profile"
+        `cache_GET_/get_students_profile/${selectedStudentId}`
       );
       if (cachedProfile) {
-        const profileData = JSON.parse(cachedProfile);
-        setStudentProfile(profileData.data);
+        try {
+          const profileData = JSON.parse(cachedProfile);
+          setStudentProfile(profileData.data);
+        } catch (error) {
+          console.error("Error parsing cached profile:", error);
+        }
       }
     };
 
     fetchStudentProfile();
-  }, []);
+  }, [selectedStudentId]);
+
+  const handleRemarkSubmit = async () => {
+    if (!selectedStudentId || !newRemark) return;
+
+    try {
+      await ApiService.put(
+        `/modify_remark/${selectedStudentId}?remark=${encodeURIComponent(
+          newRemark
+        )}`
+      );
+
+      // Update individual profile cache
+      const updatedProfile = {
+        ...studentProfile!,
+        Remark: newRemark,
+      };
+      setStudentProfile(updatedProfile);
+      localStorage.setItem(
+        `cache_GET_/get_students_profile/${selectedStudentId}`,
+        JSON.stringify({ data: updatedProfile })
+      );
+
+      // Update all students cache
+      const cachedStudents = localStorage.getItem(
+        "cache_GET_/get_all_students"
+      );
+      if (cachedStudents) {
+        const studentsData = JSON.parse(cachedStudents);
+        const updatedStudents = {
+          ...studentsData,
+          data: {
+            ...studentsData.data,
+            Students: studentsData.data.Students.map((student: any) =>
+              student.student_id === selectedStudentId
+                ? { ...student, Remark: newRemark }
+                : student
+            ),
+          },
+        };
+        localStorage.setItem(
+          "cache_GET_/get_all_students",
+          JSON.stringify(updatedStudents)
+        );
+      }
+
+      setIsEditingRemark(false);
+    } catch (error) {
+      console.error("Error updating remark:", error);
+    }
+  };
 
   const yAxisDomain = useMemo(() => {
     const allMarks = performanceData.flatMap((entry) =>
@@ -211,6 +358,40 @@ function StudentDashboard() {
     strokeWidth: highlightedSubject === subject ? 3 : 2,
   });
 
+  if (user?.role === "teacher" && !selectedStudentId) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          Select a Student
+        </h1>
+        {isLoadingStudents ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+          </div>
+        ) : studentsList.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {studentsList.map((student) => (
+              <button
+                key={student.student_id}
+                onClick={() => setSelectedStudentId(student.student_id)}
+                className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow text-left"
+              >
+                <h3 className="text-lg font-semibold">{student.name}</h3>
+                <p className="text-sm text-gray-500">
+                  ID: {student.student_id}
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            No students found
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -218,6 +399,61 @@ function StudentDashboard() {
       </div>
     );
   }
+
+  const remarksSection = (
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Recent Remarks</h2>
+        {user?.role === "teacher" && (
+          <button
+            onClick={() => {
+              if (isEditingRemark) {
+                handleRemarkSubmit();
+              } else {
+                setNewRemark(studentProfile?.Remark || "");
+                setIsEditingRemark(true);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-500 text-white hover:bg-indigo-600"
+          >
+            {isEditingRemark ? (
+              <>
+                <Save size={16} /> Save
+              </>
+            ) : (
+              <>
+                <Edit2 size={16} /> Edit
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      <div className="space-y-4">
+        <div className="border-l-4 border-indigo-400 pl-4">
+          {isEditingRemark ? (
+            <textarea
+              value={newRemark}
+              onChange={(e) => setNewRemark(e.target.value)}
+              className="w-full p-2 border rounded-md"
+              rows={4}
+            />
+          ) : (
+            <p className="text-gray-600">
+              {studentProfile?.Remark || "No remarks"}
+            </p>
+          )}
+          {studentProfile?.Remark && !isEditingRemark && (
+            <>
+              <p className="text-sm text-gray-500">
+                {studentProfile.class_teacher} - Class Teacher
+              </p>
+              <p className="text-xs text-gray-400">Latest Remark</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -329,26 +565,7 @@ function StudentDashboard() {
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Recent Remarks
-          </h2>
-          <div className="space-y-4">
-            <div className="border-l-4 border-indigo-400 pl-4">
-              <p className="text-gray-600">
-                {studentProfile?.Remark || "No remarks"}
-              </p>
-              {studentProfile?.Remark && (
-                <>
-                  <p className="text-sm text-gray-500">
-                    {studentProfile.class_teacher} - Class Teacher
-                  </p>
-                  <p className="text-xs text-gray-400">Latest Remark</p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        {remarksSection}
       </div>
     </>
   );
