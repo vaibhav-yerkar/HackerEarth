@@ -475,7 +475,9 @@ function StudentDashboard() {
           </div>
 
           <Link
-            to="/attendance"
+            to={`/attendance${
+              selectedStudentId ? `?student_id=${selectedStudentId}` : ""
+            }`}
             className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center mb-4">

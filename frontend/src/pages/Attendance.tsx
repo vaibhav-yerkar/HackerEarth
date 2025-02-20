@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import ApiService from "../services/api";
 import { AttendanceResponse, AttendanceEntry } from "../types";
+import { useAppStore } from "../store/index";
+import { Edit2, Save } from "lucide-react";
 import {
   format,
   startOfMonth,
@@ -15,34 +17,50 @@ import {
 } from "date-fns";
 
 function Attendance() {
+  const user = useAppStore((state) => state.user);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendanceData, setAttendanceData] = useState<AttendanceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [modifiedDates, setModifiedDates] = useState<
+    Map<string, "P" | "A" | null>
+  >(new Map());
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const studentId =
+      user?.role === "teacher"
+        ? new URLSearchParams(window.location.search).get("student_id")
+        : localStorage.getItem("student_id");
+
+    if (studentId) {
+      setCurrentStudentId(studentId);
+    }
+  }, [user?.role]);
 
   useEffect(() => {
     const fetchAttendance = async () => {
-      try {
-        const studentId = localStorage.getItem("student_id");
-        if (!studentId) {
-          throw new Error("Student ID not found");
-        }
+      if (!currentStudentId) return;
 
+      setIsLoading(true);
+      try {
         const response = await ApiService.get<AttendanceResponse>(
-          `/get_student_attendance/${studentId}`
+          `/get_student_attendance/${currentStudentId}`
         );
         setAttendanceData(response.Attendance);
       } catch (err) {
         console.error("Error fetching attendance:", err);
-        // API service will return cached data on error, so we don't need to handle it here
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Listen for cache hits
     const handleCacheHit = (event: CustomEvent<{ key: string; data: any }>) => {
-      if (event.detail.key.startsWith("GET_/get_student_attendance/")) {
+      if (
+        event.detail.key === `GET_/get_student_attendance/${currentStudentId}`
+      ) {
         setAttendanceData(event.detail.data.Attendance);
         setIsLoading(false);
       }
@@ -57,7 +75,7 @@ function Attendance() {
         handleCacheHit as EventListener
       );
     };
-  }, []);
+  }, [currentStudentId]);
 
   const handlePreviousMonth = () => {
     setCurrentDate((prevDate) => subMonths(prevDate, 1));
@@ -72,13 +90,100 @@ function Attendance() {
     return attendanceData.find((entry) => entry.attendance_date === dateStr);
   };
 
+  const handleDateClick = (date: Date) => {
+    if (!isEditing || isWeekend(date) || !isSameMonth(date, currentDate))
+      return;
+
+    const dateStr = format(date, "yyyy-MM-dd");
+    const currentValue =
+      modifiedDates.get(dateStr) ||
+      getAttendanceForDate(date)?.attendance_remarks ||
+      null;
+
+    let newValue: "P" | "A" | null;
+    if (currentValue === null) newValue = "P";
+    else if (currentValue === "P") newValue = "A";
+    else newValue = null;
+
+    setModifiedDates(new Map(modifiedDates.set(dateStr, newValue)));
+  };
+
+  const handleSave = async () => {
+    if (modifiedDates.size === 0 || !currentStudentId) return;
+    setIsSaving(true);
+
+    try {
+      for (const [date, status] of modifiedDates.entries()) {
+        if (status === null) continue;
+
+        await ApiService.post("/add_attendance", {
+          student_id: currentStudentId,
+          attendance_date: date,
+          attendance_status: status,
+        });
+      }
+
+      const cachedData = localStorage.getItem(
+        `cache_GET_/get_student_attendance/${currentStudentId}`
+      );
+
+      let updatedAttendance = [...attendanceData];
+
+      updatedAttendance = updatedAttendance.filter(
+        (entry) => !modifiedDates.has(entry.attendance_date)
+      );
+
+      modifiedDates.forEach((status, date) => {
+        if (status) {
+          updatedAttendance.push({
+            attendance_id: `temp_${date}`,
+            student_id: currentStudentId!,
+            attendance_date: date,
+            attendance_remarks: status,
+          });
+        }
+      });
+
+      setAttendanceData(updatedAttendance);
+
+      if (cachedData) {
+        const parsedCache = JSON.parse(cachedData);
+        localStorage.setItem(
+          `cache_GET_/get_student_attendance/${currentStudentId}`,
+          JSON.stringify({
+            ...parsedCache,
+            Attendance: updatedAttendance,
+          })
+        );
+      }
+
+      setModifiedDates(new Map());
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error saving attendance:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const getAttendanceColor = (date: Date) => {
     if (isWeekend(date)) return "bg-gray-100 text-gray-400";
+
+    const dateStr = format(date, "yyyy-MM-dd");
+    const modifiedStatus = modifiedDates.get(dateStr);
+
+    if (modifiedStatus !== undefined) {
+      return modifiedStatus === "P"
+        ? "bg-green-300 text-green-800 font-bold"
+        : modifiedStatus === "A"
+        ? "bg-red-200 text-red-800 font-bold"
+        : "bg-white";
+    }
 
     const attendance = getAttendanceForDate(date);
     if (!attendance) return "bg-white";
 
-    return attendance.attendance_remarks == "P"
+    return attendance.attendance_remarks === "P"
       ? "bg-green-300 text-green-800 font-bold"
       : "bg-red-200 text-red-800 font-bold";
   };
@@ -116,12 +221,38 @@ function Attendance() {
 
   return (
     <div className="max-w-7xl mx-auto h-screen p-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">
-        Attendance Calendar
-      </h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Attendance Calendar
+        </h1>
+        {user?.role === "teacher" && (
+          <button
+            onClick={() => {
+              if (isEditing) {
+                handleSave();
+              } else {
+                setIsEditing(true);
+              }
+            }}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-500 text-white hover:bg-indigo-600 disabled:bg-gray-400"
+          >
+            {isEditing ? (
+              <>
+                <Save className="h-5 w-5" />
+                {isSaving ? "Saving..." : "Save"}
+              </>
+            ) : (
+              <>
+                <Edit2 className="h-5 w-5" />
+                Edit
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       <div className="flex gap-4 h-[calc(100vh-120px)] scale-90">
-        {/* Calendar Section */}
         <div className="bg-white rounded-lg shadow-md p-4 flex-1">
           <div className="flex justify-between items-center mb-4">
             <button
@@ -156,10 +287,18 @@ function Attendance() {
             {days.map((day) => (
               <div
                 key={day.toISOString()}
+                onClick={() => handleDateClick(day)}
                 className={`
                   aspect-square rounded-full flex items-center justify-center text-sm
                   ${getAttendanceColor(day)}
                   ${!isSameMonth(day, currentDate) ? "opacity-25" : ""}
+                  ${
+                    isEditing &&
+                    !isWeekend(day) &&
+                    isSameMonth(day, currentDate)
+                      ? "cursor-pointer hover:opacity-75"
+                      : ""
+                  }
                 `}
               >
                 {format(day, "d")}
@@ -168,7 +307,6 @@ function Attendance() {
           </div>
         </div>
 
-        {/* Summary Section */}
         <div className="bg-white rounded-lg shadow-md p-4 w-80">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Attendance Summary

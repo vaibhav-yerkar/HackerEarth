@@ -61,26 +61,32 @@ class ApiService {
   ): Promise<T> {
     const cacheKey = this.getCacheKey(config);
     const setOffline = useAppStore.getState().setIsOffline;
-    const cachedData = this.getFromCache(cacheKey);
+
+    // Only check cache for GET requests
+    const cachedData =
+      config.method?.toUpperCase() === "GET"
+        ? this.getFromCache(cacheKey)
+        : null;
 
     try {
       const response: AxiosResponse<T> = await api(config);
 
-      if (response.status === 200) {
+      if (response.status === 200 && config.method?.toUpperCase() === "GET") {
+        // Only cache GET requests
         this.setCache(cacheKey, response.data);
-        setOffline(false);
       }
-      
+
+      setOffline(false);
       return response.data;
     } catch (error) {
       setOffline(true);
-      
-      // If we have cached data, return it instead of throwing
-      if (cachedData) {
-        console.log('Serving from cache due to error:', error);
+
+      // Only use cache for GET requests
+      if (cachedData && config.method?.toUpperCase() === "GET") {
+        console.log("Serving from cache due to error:", error);
         return cachedData;
       }
-      
+
       throw error;
     }
   }
