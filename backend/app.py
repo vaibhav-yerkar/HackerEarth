@@ -1,10 +1,14 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
-from backend.modules.database import Database
-from backend.modules.model import Student, Grade, Attendance
+from modules.database import database as Database
+from modules.model import Student, Grade, Attendance, Event
 
 app = FastAPI(title="Student Management API")
 db = Database()
+
+@app.get("/")
+def home():
+    return {"message": "Welcome to Student Management System"}
 
 @app.post("/add_student")
 def add_student(student: Student):
@@ -50,6 +54,22 @@ def modify_student(student_id: int, student: Student):
 @app.put("/modify_remark/{student_id}")
 def modify_remark(student_id: int, remark: str):
     return db.modify_remark(student_id, remark)
+
+@app.post("/add_event")
+def add_event(event: Event):
+    return db.add_event(event.dict())
+
+@app.get("/get_events")
+def get_events():
+    return db.get_events()
+
+@app.delete("/delete_event/{event_id}")
+def delete_event(event_id: int):
+    return db.delete_event(event_id)
+
+@app.put("/modify_event/{event_id}")
+def modify_event(event_id: int, event: Event):
+    return db.modify_event(event_id, event.dict())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
