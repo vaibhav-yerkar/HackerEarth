@@ -207,7 +207,7 @@ The key directories and files are as follows:
 
 ### Conclusion
 
-#### The frontend is designed to interact seamlessly with the backend API (see backend/app.py), ensuring that both parents and teachers have an intuitive and responsive experience. This modular structure along with real-time updates and offline support makes it robust and scalable for future enhancements.
+The frontend is designed to interact seamlessly with the backend API (see backend/app.py), ensuring that both parents and teachers have an intuitive and responsive experience. This modular structure along with real-time updates and offline support makes it robust and scalable for future enhancements.
 
 **Developed with a focus on keeping parents informed and connected with their child’s education.**
 
