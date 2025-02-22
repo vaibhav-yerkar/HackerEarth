@@ -181,15 +181,19 @@ The key directories and files are as follows:
 
 1. **Installation:**  
    Ensure you have Node.js installed. Then, install dependencies:
+
    ```sh
    npm install
    ```
+
 2. **Environment Variables:**  
    Create a `.env` file in the frontend folder with the required variables :
+
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_KEY`
    - `VITE_EMAILJS_KEY`
    - `VITE_API_BASE_URL`
+
 3. **Development Server:**
    Start the development server with:
    ```sh
@@ -203,7 +207,7 @@ The key directories and files are as follows:
 
 ### Conclusion
 
-## The frontend is designed to interact seamlessly with the backend API (see backend/app.py), ensuring that both parents and teachers have an intuitive and responsive experience. This modular structure along with real-time updates and offline support makes it robust and scalable for future enhancements.
+#### The frontend is designed to interact seamlessly with the backend API (see backend/app.py), ensuring that both parents and teachers have an intuitive and responsive experience. This modular structure along with real-time updates and offline support makes it robust and scalable for future enhancements.
 
 **Developed with a focus on keeping parents informed and connected with their child’s education.**
 
