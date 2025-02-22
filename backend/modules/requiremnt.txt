@@ -6,3 +6,7 @@ groq
 pydantic
 supabase
 jsonschema
+gTTs
+translate
+pygame
+io
