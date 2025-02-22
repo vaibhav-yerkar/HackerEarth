@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
-from backend.modules.database import Database
-from backend.modules.model import Student, Grade, Attendance
+from modules.database import database  as Database
+from modules.model import Student, Grade, Attendance
 
 app = FastAPI(title="Student Management API")
 db = Database()
