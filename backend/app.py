@@ -3,12 +3,17 @@ import uvicorn
 from modules.database import database  as Database
 from modules.model import Student, Grade, Attendance,chatbot_response,Event
 from modules.chatbot import ParentalMonitoringSystem
+from modules.audio_notes import AudioNotes
+from fastapi.responses import FileResponse
+
 from dotenv import load_dotenv
 import os
+
 
 app = FastAPI(title="Student Management API")
 chatbot = ParentalMonitoringSystem()
 db = Database()
+audio_notes = AudioNotes()
 
 
 @app.get("/")
@@ -80,6 +85,24 @@ def modify_event(event_id: int, event: Event):
 def chatbot_response(chatbot_response: chatbot_response):
     response = chatbot.generate_response(chatbot_response.question, chatbot_response.student_id)
     return {"response": response}
+
+
+@app.post("/generate_audio")
+def generate_audio(text: str, lang: str = "en"):
+    """
+    Generates an audio file and makes it available for download.
+    """
+    audio = audio_notes.text_to_audio(text, lang)
+    if not audio:
+        raise HTTPException(status_code=500, detail="Audio generation failed")
+
+    # Save the audio file temporarily
+    audio_file_path = "generated_audio.mp3"
+    with open(audio_file_path, "wb") as f:
+        f.write(audio.read())
+
+    return FileResponse(audio_file_path, filename="audio.mp3", media_type="audio/mpeg")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
