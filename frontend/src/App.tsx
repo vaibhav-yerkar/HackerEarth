@@ -34,10 +34,7 @@ function AppContent() {
       <main className="container mx-auto px-4 py-8">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={user ? <Home /> : <Navigate to="/login" />}
-          />
+          <Route path="/" element={<Home />} />
           <Route
             path="/dashboard"
             element={user ? <StudentDashboard /> : <Navigate to="/login" />}
@@ -67,7 +64,7 @@ function AppContent() {
         </Routes>
       </main>
       {/* Only show ChatBot if not on login page and user is logged in */}
-      {location.pathname !== "/login" && user && <ChatBot />}
+      {location.pathname !== "/login" && user?.role === "parent" && <ChatBot />}
     </div>
   );
 }

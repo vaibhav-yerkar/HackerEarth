@@ -49,9 +49,10 @@ function Attendance() {
         const response = await ApiService.get<AttendanceResponse>(
           `/get_student_attendance/${currentStudentId}`
         );
-        setAttendanceData(response.Attendance);
+        setAttendanceData(response.Attendance || []);
       } catch (err) {
         console.error("Error fetching attendance:", err);
+        setAttendanceData([]); // Set empty array on error
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +62,7 @@ function Attendance() {
       if (
         event.detail.key === `GET_/get_student_attendance/${currentStudentId}`
       ) {
-        setAttendanceData(event.detail.data.Attendance);
+        setAttendanceData(event.detail.data.Attendance || []); // Handle potentially missing data
         setIsLoading(false);
       }
     };
@@ -189,6 +190,16 @@ function Attendance() {
   };
 
   const calculateSummary = () => {
+    if (!attendanceData.length) {
+      return {
+        totalDays: 0,
+        presentDays: 0,
+        absentDays: 0,
+        presentRate: 0,
+        absentRate: 0,
+      };
+    }
+
     const totalDays = attendanceData.length;
     const presentDays = attendanceData.filter(
       (entry) => entry.attendance_remarks === "P"
@@ -211,8 +222,15 @@ function Attendance() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+      <div className="max-w-7xl mx-auto h-screen p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Attendance Calendar
+          </h1>
+        </div>
+        <div className="flex items-center justify-center h-[calc(100vh-120px)]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+        </div>
       </div>
     );
   }

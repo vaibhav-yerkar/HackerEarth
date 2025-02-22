@@ -13,22 +13,16 @@ function ChatBot() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
-    // Get student_id from cache or use 0
     const student_id = localStorage.getItem("student_id") || "0";
-
-    // Add user message immediately
     setMessages((prev) => [...prev, { text: inputMessage, isUser: true }]);
     setIsLoading(true);
 
     try {
-      // Make API call to chatbot endpoint
-      const response = await ApiService.get<{ response: string }>(
-        `/chatbot?question=${encodeURIComponent(
-          inputMessage
-        )}&student_id=${student_id}`
-      );
+      const response = await ApiService.post<{ response: string }>("/chatbot", {
+        student_id,
+        question: inputMessage,
+      });
 
-      // Add bot response
       setMessages((prev) => [
         ...prev,
         { text: response.response, isUser: false },
@@ -49,9 +43,9 @@ function ChatBot() {
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className="fixed bottom-10 right-10 z-50">
       {isOpen ? (
-        <div className="bg-white rounded-lg shadow-xl w-[24em] h-[36em] flex flex-col">
+        <div className="bg-white rounded-lg shadow-xl w-[28em] h-[40em] flex flex-col">
           {/* Header */}
           <div className="p-4 bg-indigo-400 text-white rounded-t-lg flex justify-between items-center">
             <h3 className="font-semibold">Chat Assistant</h3>

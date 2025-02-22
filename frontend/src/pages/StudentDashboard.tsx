@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import ApiService from "../services/api";
+import { AudioCache } from "../services/audioCache";
 import {
   StudentScore,
   AttendanceResponse,
@@ -8,6 +9,7 @@ import {
   ScoreResponse,
   StudentProfile,
   StudentListResponse,
+  EventResponse,
 } from "../types";
 import {
   LineChart,
@@ -19,9 +21,20 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Calendar, GraduationCap, UserCheck, Edit2, Save } from "lucide-react";
+import {
+  Calendar,
+  GraduationCap,
+  UserCheck,
+  Edit2,
+  Save,
+  ChevronLeft,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../store/index";
+
+const audioBaseUrl = import.meta.env.VITE_API_BASE_URL + "/generate_audio";
 
 function StudentDashboard() {
   const user = useAppStore((state) => state.user);
@@ -45,6 +58,10 @@ function StudentDashboard() {
     null
   );
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const userLanguage = useAppStore((state) => state.language);
+  const [eventCount, setEventCount] = useState(0);
 
   // Transform API response data into the format needed for the chart
   const transformScoreData = (
@@ -169,10 +186,29 @@ function StudentDashboard() {
           );
           setAttendanceSummary(null);
         }
+
+        // Handle events data
+        const cachedEvents = localStorage.getItem("cache_GET_/get_events");
+        let eventsData;
+
+        if (cachedEvents) {
+          eventsData = JSON.parse(cachedEvents);
+          const upcomingEvents = eventsData.data.Events.filter(
+            (event: any) => new Date(event.date) >= new Date()
+          );
+          setEventCount(upcomingEvents.length || 0);
+        } else {
+          const response = await ApiService.get<EventResponse>("/get_events");
+          const upcomingEvents = response.Events.filter(
+            (event) => new Date(event.date) >= new Date()
+          );
+          setEventCount(upcomingEvents.length || 0);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
         setPerformanceData([]);
         setAttendanceSummary(null);
+        setEventCount(0);
       } finally {
         setIsLoading(false);
       }
@@ -305,6 +341,79 @@ function StudentDashboard() {
     }
   };
 
+  const handlePlayRemark = async () => {
+    if (!studentProfile?.Remark) return;
+
+    try {
+      const cacheKey = `remark_${studentProfile.student_id}_${userLanguage}`;
+      let audioUrl = await AudioCache.getAudioUrl(cacheKey);
+
+      if (!audioUrl) {
+        const response = await fetch(
+          `${audioBaseUrl}?text=${encodeURIComponent(
+            studentProfile.Remark
+          )}&lang=${userLanguage}`,
+          {
+            method: "POST",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch audio");
+        }
+
+        const audioBlob = await response.blob();
+        if (!audioBlob.type.startsWith("audio/")) {
+          throw new Error("Invalid audio format received");
+        }
+        audioUrl = AudioCache.setAudioCache(cacheKey, audioBlob);
+      }
+
+      // Stop current audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const audio = new Audio();
+
+      audio.onerror = (e) => {
+        console.error("Audio playback error:", e);
+        setPlayingAudioId(null);
+      };
+
+      audio.onended = () => {
+        setPlayingAudioId(null);
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
+      };
+
+      try {
+        audio.src = audioUrl;
+        await audio.load();
+        audioRef.current = audio;
+        await audio.play();
+        setPlayingAudioId("remark");
+      } catch (playError) {
+        console.error("Playback failed:", playError);
+        setPlayingAudioId(null);
+        audioRef.current = null;
+      }
+    } catch (error) {
+      console.error("Audio processing error:", error);
+      setPlayingAudioId(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
   const yAxisDomain = useMemo(() => {
     const allMarks = performanceData.flatMap((entry) =>
       Object.entries(entry)
@@ -430,26 +539,47 @@ function StudentDashboard() {
       </div>
       <div className="space-y-4">
         <div className="border-l-4 border-indigo-400 pl-4">
-          {isEditingRemark ? (
-            <textarea
-              value={newRemark}
-              onChange={(e) => setNewRemark(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              rows={4}
-            />
-          ) : (
-            <p className="text-gray-600">
-              {studentProfile?.Remark || "No remarks"}
-            </p>
-          )}
-          {studentProfile?.Remark && !isEditingRemark && (
-            <>
-              <p className="text-sm text-gray-500">
-                {studentProfile.class_teacher} - Class Teacher
-              </p>
-              <p className="text-xs text-gray-400">Latest Remark</p>
-            </>
-          )}
+          <div className="flex justify-between items-start">
+            <div>
+              {isEditingRemark ? (
+                <textarea
+                  value={newRemark}
+                  onChange={(e) => setNewRemark(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  rows={4}
+                />
+              ) : (
+                <>
+                  <p className="text-gray-600">
+                    {studentProfile?.Remark || "No remarks"}
+                  </p>
+                  {studentProfile?.Remark && (
+                    <>
+                      <p className="text-sm text-gray-500">
+                        {studentProfile.class_teacher} - Class Teacher
+                      </p>
+                      <p className="text-xs text-gray-400">Latest Remark</p>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            {!isEditingRemark && studentProfile?.Remark && (
+              <button
+                onClick={handlePlayRemark}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label={
+                  playingAudioId === "remark" ? "Stop audio" : "Play audio"
+                }
+              >
+                {playingAudioId === "remark" ? (
+                  <Volume2 className="h-5 w-5 text-indigo-600 animate-pulse" />
+                ) : (
+                  <VolumeX className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -458,9 +588,19 @@ function StudentDashboard() {
   return (
     <>
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Student Dashboard
-        </h1>
+        <div className="flex items-center gap-4 mb-8">
+          {user?.role === "teacher" && selectedStudentId && (
+            <button
+              onClick={() => setSelectedStudentId(null)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+          <h1 className="text-3xl font-bold text-gray-900">
+            Student Dashboard
+          </h1>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-md">
@@ -501,8 +641,10 @@ function StudentDashboard() {
               <Calendar className="h-8 w-8 text-blue-400" />
               <h2 className="text-xl font-semibold ml-2">Upcoming</h2>
             </div>
-            <p className="text-lg font-medium text-gray-900">3 Assessments</p>
-            <p className="text-sm text-gray-600">This Week</p>
+            <p className="text-lg font-medium text-gray-900">
+              {eventCount} {eventCount === 1 ? "Event" : "Events"}
+            </p>
+            <p className="text-sm text-gray-600">Total Events</p>
           </div>
         </div>
 
@@ -566,7 +708,6 @@ function StudentDashboard() {
             </div>
           )}
         </div>
-
         {remarksSection}
       </div>
     </>

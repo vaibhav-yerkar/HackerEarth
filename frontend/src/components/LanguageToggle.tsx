@@ -4,23 +4,21 @@ import { useAppStore } from "../store/index";
 
 const LanguageToggle: React.FC = () => {
   const { i18n } = useTranslation();
-  const currentLanguage = useAppStore((state) => state.language);
-  const setLanguage = useAppStore((state) => state.setLanguage);
+  const { language, setLanguage } = useAppStore();
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLang = e.target.value;
-    i18n.changeLanguage(newLang);
-    setLanguage(newLang);
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang);
+    setLanguage(lang);
   };
 
   return (
     <select
-      value={currentLanguage}
-      onChange={handleLanguageChange}
-      className="bg-white text-indigo-400 px-2 py-1 rounded"
+      value={language}
+      onChange={(e) => handleLanguageChange(e.target.value)}
+      className="bg-white border rounded-md px-2 py-1 text-sm text-black"
     >
       <option value="en">English</option>
-      <option value="hi">Hindi</option>
+      <option value="hi">हिंदी</option>
     </select>
   );
 };

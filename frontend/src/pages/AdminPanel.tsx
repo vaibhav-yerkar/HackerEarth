@@ -9,7 +9,12 @@ import {
   CalendarPlus,
 } from "lucide-react";
 import ApiService from "../services/api";
-import { ScoreResponse, StudentListResponse } from "../types";
+import { ScoreResponse, StudentListResponse, EventResponse } from "../types";
+import { DeleteStudentModal } from "../components/modals/DeleteStudentModal";
+import { AddMarksModal } from "../components/modals/AddMarksModal";
+import { AddStudentModal } from "../components/modals/AddStudentModal";
+import { ModifyStudentModal } from "../components/modals/ModifyStudentModal";
+import { AddEventModal } from "../components/modals/AddEventModal";
 
 interface StudentScore {
   student_id: string;
@@ -25,8 +30,92 @@ function AdminPanel() {
   const [selectedSubject, setSelectedSubject] = useState<string>("average");
   const [leaderboard, setLeaderboard] = useState<StudentScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeModal, setActiveModal] = useState<
+    "add" | "delete" | "modify" | "marks" | "event" | null
+  >(null);
+  const [studentsList, setStudentsList] = useState<
+    StudentListResponse["Students"]
+  >([]);
+  const [eventCount, setEventCount] = useState(0);
 
   const subjects = ["Math", "Science", "English", "History", "average"];
+
+  const processStudentScores = (student: any, scoreData: any) => {
+    try {
+      // Initialize with default scores
+      const defaultScores = {
+        student_id: student.student_id,
+        name: student.name,
+        average: 0,
+        scores: {
+          Math: 0,
+          Science: 0,
+          English: 0,
+          History: 0,
+        },
+      };
+
+      // If no valid score data, return defaults
+      if (!scoreData?.Scores || !Array.isArray(scoreData.Scores)) {
+        return defaultScores;
+      }
+
+      // Process scores by subject
+      const subjectScores: { [key: string]: number[] } = {};
+      scoreData.Scores.forEach((score: any) => {
+        if (!score?.subject || typeof score?.marks !== "number") return;
+
+        if (!subjectScores[score.subject]) {
+          subjectScores[score.subject] = [];
+        }
+        subjectScores[score.subject].push(score.marks);
+      });
+
+      // Calculate averages per subject with defaults
+      const averageScores = {
+        Math: 0,
+        Science: 0,
+        English: 0,
+        History: 0,
+      };
+
+      Object.entries(subjectScores).forEach(([subject, marks]) => {
+        if (marks.length > 0) {
+          averageScores[subject as keyof typeof averageScores] =
+            marks.reduce((a, b) => a + b, 0) / marks.length;
+        }
+      });
+
+      // Calculate overall average from valid scores
+      const validScores = Object.values(averageScores).filter(
+        (score) => score > 0
+      );
+      const overallAverage =
+        validScores.length > 0
+          ? validScores.reduce((a, b) => a + b, 0) / validScores.length
+          : 0;
+
+      return {
+        student_id: student.student_id,
+        name: student.name,
+        average: overallAverage,
+        scores: averageScores,
+      };
+    } catch (error) {
+      // Return default scores on any error
+      return {
+        student_id: student.student_id,
+        name: student.name,
+        average: 0,
+        scores: {
+          Math: 0,
+          Science: 0,
+          English: 0,
+          History: 0,
+        },
+      };
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,9 +128,10 @@ function AdminPanel() {
           console.error("No cached students data found");
           return;
         }
-
         const studentsData = JSON.parse(cachedStudents);
         const students = studentsData.data.Students || [];
+        setStudentCount(students.length);
+        setStudentsList(students);
         setStudentCount(students.length);
 
         const studentsScores: StudentScore[] = await Promise.all(
@@ -62,64 +152,16 @@ function AdminPanel() {
                 );
                 scoreData = scoreData.data;
               }
-
-              // Ensure we have valid score data
-              if (!scoreData?.Scores || !Array.isArray(scoreData.Scores)) {
-                console.error(
-                  `Invalid score data for student ${student.student_id}`
-                );
-                return null;
-              }
-
-              // Process scores by subject
-              const subjectScores: { [key: string]: number[] } = {};
-              scoreData.Scores.forEach((score: any) => {
-                if (!score.subject || typeof score.marks !== "number") return;
-
-                if (!subjectScores[score.subject]) {
-                  subjectScores[score.subject] = [];
-                }
-                subjectScores[score.subject].push(score.marks);
-              });
-
-              // Calculate averages per subject
-              const averageScores: { [key: string]: number } = {};
-              Object.entries(subjectScores).forEach(([subject, marks]) => {
-                if (marks.length > 0) {
-                  averageScores[subject] =
-                    marks.reduce((a, b) => a + b, 0) / marks.length;
-                }
-              });
-
-              // Calculate overall average
-              const subjectAverages = Object.values(averageScores);
-              const overallAverage =
-                subjectAverages.length > 0
-                  ? subjectAverages.reduce((a, b) => a + b, 0) /
-                    subjectAverages.length
-                  : 0;
-
-              return {
-                student_id: student.student_id,
-                name: student.name,
-                average: overallAverage,
-                scores: averageScores,
-              };
             } catch (error) {
-              console.error(
-                `Error processing student ${student.student_id}:`,
-                error
-              );
-              return null;
+              scoreData = null;
             }
+
+            return processStudentScores(student, scoreData);
           })
         );
 
-        // Filter out null values and sort
-        const validScores = studentsScores.filter(
-          (score): score is StudentScore => score !== null
-        );
-        const sortedScores = validScores.sort((a, b) => {
+        // Sort scores
+        const sortedScores = studentsScores.sort((a, b) => {
           if (selectedSubject === "average") {
             return b.average - a.average;
           }
@@ -129,8 +171,22 @@ function AdminPanel() {
         });
 
         setLeaderboard(sortedScores);
+
+        // Handle events data
+        const cachedEvents = localStorage.getItem("cache_GET_/get_events");
+        let eventsData;
+
+        if (cachedEvents) {
+          eventsData = JSON.parse(cachedEvents);
+          setEventCount(eventsData.data.Events.length || 0);
+        } else {
+          const response = await ApiService.get<EventResponse>("/get_events");
+          setEventCount(response.Events.length || 0);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
+        setLeaderboard([]);
+        setEventCount(0);
       } finally {
         setIsLoading(false);
       }
@@ -138,6 +194,11 @@ function AdminPanel() {
 
     fetchData();
   }, [selectedSubject]);
+
+  const handleSuccess = () => {
+    // Refresh data after successful operation
+    window.location.reload();
+  };
 
   if (isLoading) {
     return (
@@ -166,8 +227,8 @@ function AdminPanel() {
             <CalendarIcon className="h-8 w-8 text-blue-600" />
             <h2 className="text-xl font-semibold ml-2">Events</h2>
           </div>
-          <p className="text-3xl font-bold text-gray-900">8</p>
-          <p className="text-sm text-gray-600">This Month</p>
+          <p className="text-3xl font-bold text-gray-900">{eventCount}</p>
+          <p className="text-sm text-gray-600">Total Events</p>
         </div>
       </div>
 
@@ -175,7 +236,10 @@ function AdminPanel() {
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
         <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <button className="flex items-center p-4 bg-indigo-50 rounded-lg text-left hover:bg-indigo-100 transition-colors group">
+          <button
+            onClick={() => setActiveModal("add")}
+            className="flex items-center p-4 bg-indigo-50 rounded-lg text-left hover:bg-indigo-100 transition-colors group"
+          >
             <div className="mr-4">
               <UserPlus className="h-6 w-6 text-indigo-600 group-hover:scale-110 transition-transform" />
             </div>
@@ -185,7 +249,10 @@ function AdminPanel() {
             </div>
           </button>
 
-          <button className="flex items-center p-4 bg-red-50 rounded-lg text-left hover:bg-red-100 transition-colors group">
+          <button
+            onClick={() => setActiveModal("delete")}
+            className="flex items-center p-4 bg-red-50 rounded-lg text-left hover:bg-red-100 transition-colors group"
+          >
             <div className="mr-4">
               <UserMinus className="h-6 w-6 text-red-600 group-hover:scale-110 transition-transform" />
             </div>
@@ -195,7 +262,10 @@ function AdminPanel() {
             </div>
           </button>
 
-          <button className="flex items-center p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors group">
+          <button
+            onClick={() => setActiveModal("modify")}
+            className="flex items-center p-4 bg-purple-50 rounded-lg text-left hover:bg-purple-100 transition-colors group"
+          >
             <div className="mr-4">
               <UserCog className="h-6 w-6 text-purple-600 group-hover:scale-110 transition-transform" />
             </div>
@@ -207,7 +277,10 @@ function AdminPanel() {
             </div>
           </button>
 
-          <button className="flex items-center p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors group">
+          <button
+            onClick={() => setActiveModal("marks")}
+            className="flex items-center p-4 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors group"
+          >
             <div className="mr-4">
               <GraduationCap className="h-6 w-6 text-green-600 group-hover:scale-110 transition-transform" />
             </div>
@@ -217,7 +290,10 @@ function AdminPanel() {
             </div>
           </button>
 
-          <button className="flex items-center p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors group">
+          <button
+            onClick={() => setActiveModal("event")}
+            className="flex items-center p-4 bg-blue-50 rounded-lg text-left hover:bg-blue-100 transition-colors group"
+          >
             <div className="mr-4">
               <CalendarPlus className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform" />
             </div>
@@ -228,6 +304,36 @@ function AdminPanel() {
           </button>
         </div>
       </div>
+
+      {/* Modals */}
+      <AddStudentModal
+        isOpen={activeModal === "add"}
+        onClose={() => setActiveModal(null)}
+        onSuccess={handleSuccess}
+      />
+      <DeleteStudentModal
+        isOpen={activeModal === "delete"}
+        onClose={() => setActiveModal(null)}
+        onSuccess={handleSuccess}
+        students={studentsList}
+      />
+      <AddMarksModal
+        isOpen={activeModal === "marks"}
+        onClose={() => setActiveModal(null)}
+        onSuccess={handleSuccess}
+        students={studentsList}
+      />
+      <ModifyStudentModal
+        isOpen={activeModal === "modify"}
+        onClose={() => setActiveModal(null)}
+        onSuccess={handleSuccess}
+        students={studentsList}
+      />
+      <AddEventModal
+        isOpen={activeModal === "event"}
+        onClose={() => setActiveModal(null)}
+        onSuccess={handleSuccess}
+      />
 
       {/* Student Leaderboard */}
       <div className="bg-white rounded-lg shadow-md p-6 mt-10">

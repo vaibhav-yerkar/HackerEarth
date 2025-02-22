@@ -4,6 +4,8 @@ import { Book, Key } from "lucide-react";
 import { useAppStore } from "../store/index";
 import ApiService from "../services/api";
 import { StudentProfile } from "../types";
+import { format } from "date-fns";
+import { DatePicker } from "../components/DatePicker";
 
 type UserType = "parent" | "teacher";
 
@@ -105,7 +107,7 @@ function Login() {
         }
       }
 
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An error occurred during login"
@@ -183,17 +185,25 @@ function Login() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="dob" className="sr-only">
-                      Date of Birth
+                    <label className="block text-sm font-medium text-gray-700">
+                      Student's Date of Birth
                     </label>
-                    <input
-                      id="dob"
-                      name="dob"
-                      type="date"
-                      required
-                      className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                      value={formData.parent.dob}
-                      onChange={handleInputChange}
+                    <DatePicker
+                      value={
+                        formData.parent.dob
+                          ? new Date(formData.parent.dob)
+                          : new Date()
+                      }
+                      onChange={(date) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          parent: {
+                            ...prev.parent,
+                            dob: format(date, "yyyy-MM-dd"),
+                          },
+                        }))
+                      }
+                      maxDate={new Date()}
                     />
                   </div>
                 </>
