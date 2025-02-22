@@ -89,9 +89,7 @@ def chatbot_response(chatbot_response: chatbot_response):
 
 @app.post("/generate_audio")
 def generate_audio(text: str, lang: str = "en"):
-    """
-    Generates an audio file and makes it available for download.
-    """
+    
     audio = audio_notes.text_to_audio(text, lang)
     if not audio:
         raise HTTPException(status_code=500, detail="Audio generation failed")
