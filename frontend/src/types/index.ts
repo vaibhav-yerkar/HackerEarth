@@ -19,6 +19,16 @@ export interface Event {
   importance: "low" | "medium" | "high";
 }
 
+export interface EventResponse {
+  Events: {
+    id: string;
+    title: string;
+    event_desc: string;
+    date: string;
+    time: string;
+  }[];
+}
+
 export interface User {
   id: string;
   role: "parent" | "teacher";
