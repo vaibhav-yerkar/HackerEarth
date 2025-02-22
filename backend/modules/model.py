@@ -32,3 +32,7 @@ class Event(BaseModel):
     date: Annotated[str, StringConstraints(pattern=r"\d{4}-\d{2}-\d{2}")]
     time :Annotated[str, StringConstraints(pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$")]
 
+class chatbot_response(BaseModel):
+    question: str
+    student_id: int
+

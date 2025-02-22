@@ -1,24 +1,23 @@
 import requests
 from groq import Groq
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+api_key = os.getenv("API_KEY")
 class ParentalMonitoringSystem:
-    def __init__(self, api_key):
-        """
-        Initialize the Groq client and LLM.
-        """
+    def __init__(self):
+        self.api_key = os.getenv("API_KEY")
         self.client = Groq(api_key=api_key)
         self.llm = self.client.chat.completions.create
 
     def choose_api(self, question):
-        """
-        Choose the appropriate API based on the parent's question.
-        """
         prompt_for_choosing_api = f"""
         {question}
         You have the following APIs:
         1. Attendance: http://127.0.0.1:8000/get_student_attendance/
         2. Marks: http://127.0.0.1:8000/get_student_score/
-        3. Events: http://127.0.0.1:8000/get_event_details/
+        3. Events: http://127.0.0.1:8000/get_events/
         4. School-related information: http://127.0.0.1:8000/get_school_details/
 
         Based on the question, return only the appropriate API URL as output. Provide no explanation, no additional text, and no formatting—just the exact API URL. Do not include anything else in the response. Just return 1 most similar link.
@@ -44,11 +43,7 @@ class ParentalMonitoringSystem:
             return None
 
     def clean_text(self, data):
-        """
-        Clean and process the context data.
-        """
         if "Attendance" in data:
-            # Attendance Processing
             attendance_records = data["Attendance"]
             total_lectures = len(attendance_records)
             present_count = sum(1 for record in attendance_records if record["attendance_remarks"] == "P")
@@ -60,7 +55,6 @@ class ParentalMonitoringSystem:
                 return "No Attendance Data Found."
 
         elif "Scores" in data:
-            # Marks Processing
             subject_scores = {}
             for record in data["Scores"]:
                 subject = record["subject"]
@@ -90,9 +84,6 @@ class ParentalMonitoringSystem:
         return "No data available."
 
     def generate_response(self, question, student_id):
-        """
-        Generate a response based on the parent's question and context.
-        """
         context_text = self.get_context_text(question, student_id)
 
         prompt = f"""
