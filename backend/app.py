@@ -2,11 +2,18 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 from modules.database import database  as Database
 from modules.model import Student, Grade, Attendance
+from modules.chatbot import ParentalMonitoringSystem
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+api_key = os.getenv("API_KEY")
+
 
 app = FastAPI(title="Student Management API")
 db = Database()
-chatbot = ParentalMonitoringSystem(api_key="your_api_key")
-audio_generator = AudioGenerator()
+
+chatbot = ParentalMonitoringSystem(api_key = api_key)
 
 @app.get("/")
 def home():
@@ -56,6 +63,11 @@ def modify_student(student_id: int, student: Student):
 @app.put("/modify_remark/{student_id}")
 def modify_remark(student_id: int, remark: str):
     return db.modify_remark(student_id, remark)
+
+@app.get("/chatbot")
+def chatbot_response(question: str, student_id: int):
+    response = chatbot.generate_response(question, student_id)
+    return {"response": response}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

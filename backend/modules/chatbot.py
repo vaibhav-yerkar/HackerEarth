@@ -1,3 +1,4 @@
+import requests
 from groq import Groq
 
 class ParentalMonitoringSystem:
@@ -29,54 +30,89 @@ class ParentalMonitoringSystem:
         )
         return response.choices[0].message.content
 
+    def fetch_data(self, url, student_id):
+        """
+        Fetch data from the appropriate API.
+        """
+        try:
+            response = requests.get(f"{url}{student_id}")
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
+        except Exception as e:
+            return None
+
     def clean_text(self, data):
         """
         Clean and process the context data.
         """
-        if 'Attendance' in data:
-            result = []
-            for record in data['Attendance']:
-                date = record.get('attendance_date')
-                remarks = record.get('attendance_remarks')
-                result.append({'Date': date, 'Remarks': remarks})
-            return result
-        else:
-            return "No Attendance Data Found"
-        
-    def get_context_text(self,question,student_id):
-        url = self.choose_api(question)
-        url =  f"{url}{student_id}"
-        context_text = ""
-        return context_text
+        if "Attendance" in data:
+            # Attendance Processing
+            attendance_records = data["Attendance"]
+            total_lectures = len(attendance_records)
+            present_count = sum(1 for record in attendance_records if record["attendance_remarks"] == "P")
 
-    def generate_response(self, question, context_text):
+            if total_lectures > 0:
+                attendance_percentage = round((present_count / total_lectures) * 100, 2)
+                return f"Overall attendance percentage is {attendance_percentage}%."
+            else:
+                return "No Attendance Data Found."
+
+        elif "Scores" in data:
+            # Marks Processing
+            subject_scores = {}
+            for record in data["Scores"]:
+                subject = record["subject"]
+                marks = record["marks"]
+                test_date = record["test_date"]
+
+                if subject not in subject_scores or test_date > subject_scores[subject]["test_date"]:
+                    subject_scores[subject] = {
+                        "marks": marks,
+                        "test_date": test_date
+                    }
+
+            if subject_scores:
+                marks_summary = ", ".join([f"{sub}: {details['marks']} (Latest)" for sub, details in subject_scores.items()])
+                return f"Latest scores - {marks_summary}."
+            else:
+                return "No Marks Data Found."
+
+        else:
+            return "No relevant data found."
+
+    def get_context_text(self, question, student_id):
+        url = self.choose_api(question)
+        data = self.fetch_data(url, student_id)
+        if data:
+            return self.clean_text(data)
+        return "No data available."
+
+    def generate_response(self, question, student_id):
         """
         Generate a response based on the parent's question and context.
         """
-        cleaned_context_text = self.clean_text(context_text)
+        context_text = self.get_context_text(question, student_id)
 
         prompt = f"""
         You are a chat assistant for a parental monitoring system that helps parents track their child's progress.
 
         - Parent's question: {question}
-        - Context from the database/backend: {cleaned_context_text}
+        - Context from the database/backend: {context_text}
 
         Instructions:
         1. If the parent's question mentions a technical issue, ask them to contact 9XXXXXXXXX.
-        2. If the question is about attendance, then answer accordingly. If overall attendance is requested, calculate and provide the overall attendance percentage: (total attendance_remarks = P) / (total attendance_remarks = P or A). If there is no record of the date, the lecture didn't happen.
-        3. If the question is about overall improvement, analyze the marks provided in the context and summarize the child's progress.
-        4. For questions about events, provide a pointwise response.
-        5. Keep responses precise and focused. Avoid unnecessary details.
+        2. If the question is about attendance, then answer accordingly. If overall attendance is requested, provide the percentage.
+        3. If the question is about marks, provide the latest test scores for each subject.
+        4. Keep responses precise and focused. Avoid unnecessary details.
 
-        Your response should directly address the parent's question based on the given context.
         Just return the answer in one line. No explanation needed, not even the question.
         """
 
         response = self.llm(
             model="llama3-8b-8192",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.5
         )
         return response.choices[0].message.content
-
-
