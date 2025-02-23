@@ -3,7 +3,7 @@ uvicorn
 python-dotenv
 requests
 groq
-pydantic
+email_validator
 supabase
 jsonschema
 gTTs
