@@ -1,11 +1,15 @@
-from gtts import gTTS
 import io
+import os
+
 import pygame
+from gtts import gTTS
 from translate import Translator
+
 
 class AudioNotes:
     def __init__(self):
         """Initialize pygame mixer for audio playback."""
+        os.environ["SDL_AUDIODRIVER"] = "dummy"
         pygame.mixer.init()
         self.translator = Translator(to_lang="hi")
 
