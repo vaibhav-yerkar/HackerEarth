@@ -1,10 +1,13 @@
-import requests
-from groq import Groq
-from dotenv import load_dotenv
 import os
+
+import requests
+from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
+
+
 class ParentalMonitoringSystem:
     def __init__(self):
         self.api_key = os.getenv("API_KEY")
@@ -15,17 +18,17 @@ class ParentalMonitoringSystem:
         prompt_for_choosing_api = f"""
         {question}
         You have the following APIs:
-        1. Attendance: http://127.0.0.1:8000/get_student_attendance/
-        2. Marks: http://127.0.0.1:8000/get_student_score/
-        3. Events: http://127.0.0.1:8000/get_events/
-        4. School-related information: http://127.0.0.1:8000/get_school_details/
+        1. Attendance: https://hackerearth-iabb.onrender.com/get_student_attendance/
+        2. Marks: https://hackerearth-iabb.onrender.com/get_student_score/
+        3. Events: https://hackerearth-iabb.onrender.com/get_events/
+        4. School-related information: https://hackerearth-iabb.onrender.com/get_school_details/
 
         Based on the question, return only the appropriate API URL as output. Provide no explanation, no additional text, and no formatting—just the exact API URL. Do not include anything else in the response. Just return 1 most similar link.
         """
         response = self.llm(
             model="llama3-8b-8192",
             messages=[{"role": "user", "content": prompt_for_choosing_api}],
-            temperature=0.7
+            temperature=0.7,
         )
         return response.choices[0].message.content
 
@@ -46,7 +49,11 @@ class ParentalMonitoringSystem:
         if "Attendance" in data:
             attendance_records = data["Attendance"]
             total_lectures = len(attendance_records)
-            present_count = sum(1 for record in attendance_records if record["attendance_remarks"] == "P")
+            present_count = sum(
+                1
+                for record in attendance_records
+                if record["attendance_remarks"] == "P"
+            )
 
             if total_lectures > 0:
                 attendance_percentage = round((present_count / total_lectures) * 100, 2)
@@ -61,14 +68,19 @@ class ParentalMonitoringSystem:
                 marks = record["marks"]
                 test_date = record["test_date"]
 
-                if subject not in subject_scores or test_date > subject_scores[subject]["test_date"]:
-                    subject_scores[subject] = {
-                        "marks": marks,
-                        "test_date": test_date
-                    }
+                if (
+                    subject not in subject_scores
+                    or test_date > subject_scores[subject]["test_date"]
+                ):
+                    subject_scores[subject] = {"marks": marks, "test_date": test_date}
 
             if subject_scores:
-                marks_summary = ", ".join([f"{sub}: {details['marks']} (Latest)" for sub, details in subject_scores.items()])
+                marks_summary = ", ".join(
+                    [
+                        f"{sub}: {details['marks']} (Latest)"
+                        for sub, details in subject_scores.items()
+                    ]
+                )
                 return f"Latest scores - {marks_summary}."
             else:
                 return "No Marks Data Found."
@@ -104,6 +116,6 @@ class ParentalMonitoringSystem:
         response = self.llm(
             model="llama3-8b-8192",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.5
+            temperature=0.5,
         )
         return response.choices[0].message.content
