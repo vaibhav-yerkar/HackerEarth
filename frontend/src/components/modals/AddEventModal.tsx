@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import ApiService from "../../services/api";
 import { DatePicker } from "../DatePicker";
 import { TimePicker } from "../TimePicker";
+import { useTranslation } from "react-i18next";
 
 // Add EmailJS types
 declare global {
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     title: "",
     event_desc: "",
@@ -141,7 +143,7 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-md w-full mx-4">
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Create New Event</h2>
+          <h2 className="text-xl font-semibold">{t("form.title")}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X className="h-5 w-5" />
           </button>
@@ -150,7 +152,7 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title
+              {t("form.title")}
             </label>
             <input
               type="text"
@@ -165,7 +167,7 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t("form.description")}
             </label>
             <textarea
               value={formData.event_desc}
@@ -180,7 +182,7 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+              {t("form.date")}
             </label>
             <DatePicker
               value={formData.date}
@@ -191,7 +193,7 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Time
+              {t("form.time")}
             </label>
             <TimePicker
               value={formData.time}
@@ -205,8 +207,8 @@ export function AddEventModal({ isOpen, onClose, onSuccess }: Props) {
             className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 disabled:bg-gray-400"
           >
             {isLoading || isSendingEmails
-              ? "Creating & Sending Notifications..."
-              : "Create Event"}
+              ? t("form.sending")
+              : t("form.submit")}
           </button>
         </form>
       </div>

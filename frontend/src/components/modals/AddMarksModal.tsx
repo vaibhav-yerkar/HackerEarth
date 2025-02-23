@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { X, ChevronLeft } from "lucide-react";
+import { format } from "date-fns";
 import ApiService from "../../services/api";
+import { DatePicker } from "../DatePicker";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -10,6 +13,7 @@ interface Props {
 }
 
 export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
+  const { t } = useTranslation();
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string;
     name: string;
@@ -17,7 +21,7 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
   const [formData, setFormData] = useState({
     subject: "Math",
     marks: "",
-    test_date: "",
+    test_date: format(new Date(), "yyyy-MM-dd"),
     test_type: "Midterm",
   });
 
@@ -60,7 +64,9 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
               </button>
             )}
             <h2 className="text-xl font-semibold">
-              {selectedStudent ? "Add Marks" : "Select Student"}
+              {selectedStudent
+                ? t("admin.modals.marks.title")
+                : t("admin.modals.select.student")}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -72,7 +78,7 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subject
+                {t("admin.modals.select.subject")}
               </label>
               <select
                 value={formData.subject}
@@ -82,6 +88,7 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
                 className="w-full border rounded-lg p-2"
                 required
               >
+                <option value="">{t("admin.modals.select.subject")}</option>
                 {["Math", "Science", "English", "History"].map((subject) => (
                   <option key={subject} value={subject}>
                     {subject}
@@ -92,7 +99,7 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Marks
+                {t("admin.modals.enter.marks")}
               </label>
               <input
                 type="number"
@@ -109,25 +116,23 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Test Date
+                {t("admin.modals.enter.test_date")}
               </label>
-              <input
-                type="date"
-                value={formData.test_date}
-                onChange={(e) =>
+              <DatePicker
+                value={new Date(formData.test_date)}
+                onChange={(date) =>
                   setFormData((prev) => ({
                     ...prev,
-                    test_date: e.target.value,
+                    test_date: format(date, "yyyy-MM-dd"),
                   }))
                 }
-                className="w-full border rounded-lg p-2"
-                required
+                maxDate={new Date()} // Can't select future dates
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Test Type
+                {t("admin.modals.select.test_type")}
               </label>
               <select
                 value={formData.test_type}
@@ -140,6 +145,7 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
                 className="w-full border rounded-lg p-2"
                 required
               >
+                <option value="">{t("admin.modals.select.test_type")}</option>
                 {["Midterm", "Final"].map((type) => (
                   <option key={type} value={type}>
                     {type}
@@ -148,12 +154,21 @@ export function AddMarksModal({ isOpen, onClose, onSuccess, students }: Props) {
               </select>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
-            >
-              Add Marks
-            </button>
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                {t("form.cancel")}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
+              >
+                {t("form.submit")}
+              </button>
+            </div>
           </form>
         ) : (
           <div className="p-6">

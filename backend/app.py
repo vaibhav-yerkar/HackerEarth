@@ -1,15 +1,40 @@
-import uvicorn
-from fastapi import FastAPI, HTTPException
+import os
 
-from modules.audio_notes import AudioGenerator
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+
+from modules.audio_notes import AudioNotes
 from modules.chatbot import ParentalMonitoringSystem
-from modules.database import Database
-from modules.model import Attendance, Grade, Student
+from modules.database import database as Database
+from modules.model import Attendance, Event, Grade, Student, chatbot_response
 
 app = FastAPI(title="Student Management API")
+chatbot = ParentalMonitoringSystem()
 db = Database()
-chatbot = ParentalMonitoringSystem(api_key="your_api_key")
-audio_generator = AudioGenerator()
+audio_notes = AudioNotes()
+
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def home():
+    return {"message": "Welcome to Student Management System"}
 
 
 @app.post("/add_student")
@@ -69,19 +94,49 @@ def modify_remark(student_id: int, remark: str):
     return db.modify_remark(student_id, remark)
 
 
+@app.post("/add_event")
+def add_event(event: Event):
+    return db.add_event(event.dict())
+
+
+@app.get("/get_events")
+def get_events():
+    return db.get_events()
+
+
+@app.delete("/delete_event/{event_id}")
+def delete_event(event_id: int):
+    return db.delete_event(event_id)
+
+
+@app.put("/modify_event/{event_id}")
+def modify_event(event_id: int, event: Event):
+    return db.modify_event(event_id, event.dict())
+
+
 @app.post("/chatbot")
-def chatbot_response(question: str, student_id: int):
-    context_text = chatbot.get_context_text(question, student_id)
-    response = chatbot.generate_response(question, context_text)
+def chatbot_response(chatbot_response: chatbot_response):
+    response = chatbot.generate_response(
+        chatbot_response.question, chatbot_response.student_id
+    )
     return {"response": response}
 
 
-@app.post("/generate-audio/")
+@app.post("/generate_audio")
 def generate_audio(text: str, lang: str = "en"):
-    audio = audio_generator.generate_audio(text, lang)
-    if audio:
-        return {"message": "Audio generated successfully"}
-    raise HTTPException(status_code=500, detail="Failed to generate audio")
+    """
+    Generates an audio file and makes it available for download.
+    """
+    audio = audio_notes.text_to_audio(text, lang)
+    if not audio:
+        raise HTTPException(status_code=500, detail="Audio generation failed")
+
+    # Save the audio file temporarily
+    audio_file_path = "generated_audio.mp3"
+    with open(audio_file_path, "wb") as f:
+        f.write(audio.read())
+
+    return FileResponse(audio_file_path, filename="audio.mp3", media_type="audio/mpeg")
 
 
 if __name__ == "__main__":

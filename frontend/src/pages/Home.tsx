@@ -20,8 +20,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useTranslation } from "react-i18next";
 
 function Home() {
+  const { t } = useTranslation();
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(
     null
   );
@@ -81,12 +83,10 @@ function Home() {
               <Settings className="h-8 w-8 text-purple-600" />
             </div>
             <h2 className="text-xl font-bold ml-4 text-gray-900">
-              Admin Panel
+              {t("home.features.admin")}
             </h2>
           </div>
-          <p className="text-gray-600">
-            Manage students, classes, and administrative tasks
-          </p>
+          <p className="text-gray-600">{t("home.features.admin.desc")}</p>
         </Link>
       );
     }
@@ -100,12 +100,10 @@ function Home() {
             <Users className="h-8 w-8 text-green-600" />
           </div>
           <h2 className="text-xl font-bold ml-4 text-gray-900">
-            Attendance Tracking
+            {t("home.features.attendance")}
           </h2>
         </div>
-        <p className="text-gray-600">
-          Monitor attendance patterns and view detailed reports
-        </p>
+        <p className="text-gray-600">{t("home.features.attendance.desc")}</p>
       </Link>
     );
   };
@@ -161,14 +159,15 @@ function Home() {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="text-center mb-16">
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          Welcome to <span className="text-indigo-600">YetAnotherERP</span>
+          {t("home.welcome")}{" "}
+          <span className="text-indigo-600">{t("app.name")}</span>
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           {user
             ? user.role === "parent"
-              ? `Stay connected with ${studentProfile?.name}'s educational journey through our comprehensive school management system`
-              : "Empower your teaching experience with our comprehensive school management system"
-            : "A comprehensive school management system for parents and teachers"}
+              ? t("home.subtitle.parent", { name: studentProfile?.name })
+              : t("home.subtitle.teacher")
+            : t("home.subtitle.guest")}
         </p>
       </div>
 
@@ -183,12 +182,10 @@ function Home() {
               <BarChart2 className="h-8 w-8 text-indigo-600" />
             </div>
             <h2 className="text-xl font-bold ml-4 text-gray-900">
-              Performance Analytics
+              {t("home.features.analytics")}
             </h2>
           </div>
-          <p className="text-gray-600">
-            Track academic progress with detailed insights and visual analytics
-          </p>
+          <p className="text-gray-600">{t("home.features.analytics.desc")}</p>
         </Link>
 
         <Link
@@ -200,12 +197,10 @@ function Home() {
               <Calendar className="h-8 w-8 text-blue-600" />
             </div>
             <h2 className="text-xl font-bold ml-4 text-gray-900">
-              Academic Calendar
+              {t("home.features.calendar")}
             </h2>
           </div>
-          <p className="text-gray-600">
-            Stay updated with events, exams, and important dates
-          </p>
+          <p className="text-gray-600">{t("home.features.calendar.desc")}</p>
         </Link>
 
         {getThirdCard()}
@@ -215,10 +210,10 @@ function Home() {
       <div className="bg-white rounded-3xl shadow-lg p-8 mb-16">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Interactive Performance Analytics
+            {t("analytics.interactive.title")}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Track academic progress with detailed subject-wise analysis
+            {t("analytics.interactive.subtitle")}
           </p>
         </div>
 
@@ -270,48 +265,50 @@ function Home() {
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-900">
-              Track Progress Over Time
+              {t("analytics.track.title")}
             </h3>
-            <p className="text-gray-600">
-              Monitor academic performance trends with interactive graphs.
-              Switch between subjects or view overall progress to identify areas
-              for improvement.
-            </p>
+            <p className="text-gray-600">{t("analytics.track.description")}</p>
             <ul className="space-y-2 text-gray-600">
               <li className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                Compare performance across different subjects
+                {t("analytics.comparison")}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                Identify strength areas and improvement opportunities
+                {t("analytics.identify")}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                Get detailed insights with interactive tooltips
+                {t("analytics.insights")}
               </li>
             </ul>
           </div>
 
           <div className="bg-indigo-50 rounded-xl p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Quick Stats
+              {t("stats.title")}
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm text-gray-600">Current Average</p>
+                <p className="text-sm text-gray-600">
+                  {t("stats.current.average")}
+                </p>
                 <p className="text-2xl font-bold text-indigo-600">85%</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm text-gray-600">Improvement</p>
+                <p className="text-sm text-gray-600">
+                  {t("stats.improvement")}
+                </p>
                 <p className="text-2xl font-bold text-green-600">+15%</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm text-gray-600">Best Subject</p>
+                <p className="text-sm text-gray-600">
+                  {t("stats.best.subject")}
+                </p>
                 <p className="text-xl font-bold text-blue-600">English</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <p className="text-sm text-gray-600">Focus Area</p>
+                <p className="text-sm text-gray-600">{t("stats.focus.area")}</p>
                 <p className="text-xl font-bold text-orange-600">Science</p>
               </div>
             </div>
@@ -322,7 +319,7 @@ function Home() {
       {/* Features Section */}
       <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl p-12 mb-16">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-          Key Features
+          {t("features.title")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="flex items-start p-4">
@@ -331,11 +328,9 @@ function Home() {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                Comprehensive Reports
+                {t("features.reports.title")}
               </h3>
-              <p className="text-gray-600 mt-1">
-                Detailed academic performance analysis
-              </p>
+              <p className="text-gray-600 mt-1">{t("features.reports.desc")}</p>
             </div>
           </div>
 
@@ -345,10 +340,10 @@ function Home() {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                Real-time Notifications
+                {t("features.notifications.title")}
               </h3>
               <p className="text-gray-600 mt-1">
-                Stay updated with important announcements
+                {t("features.notifications.desc")}
               </p>
             </div>
           </div>
@@ -359,10 +354,10 @@ function Home() {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                Achievement Tracking
+                {t("features.achievements.title")}
               </h3>
               <p className="text-gray-600 mt-1">
-                Monitor and celebrate student success
+                {t("features.achievements.desc")}
               </p>
             </div>
           </div>

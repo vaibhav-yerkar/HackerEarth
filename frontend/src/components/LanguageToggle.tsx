@@ -9,11 +9,12 @@ const LanguageToggle: React.FC = () => {
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang);
     setLanguage(lang);
+    localStorage.setItem("app_language", lang);
   };
 
   return (
     <select
-      value={language}
+      value={localStorage.getItem("app_language") || language}
       onChange={(e) => handleLanguageChange(e.target.value)}
       className="bg-white border rounded-md px-2 py-1 text-sm text-black"
     >

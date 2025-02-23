@@ -4,6 +4,7 @@ import { format } from "date-fns"; // Add this import
 import ApiService from "../../services/api";
 import { useAppStore } from "../../store/index";
 import { DatePicker } from "../DatePicker";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface Props {
 
 export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
   const user = useAppStore((state) => state.user);
+  const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(false); // Add this line
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
@@ -26,6 +29,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true); // Set loading state
 
     try {
       const response = await ApiService.post("/add_student", formData);
@@ -50,6 +54,8 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
       onClose();
     } catch (error) {
       console.error("Error adding student:", error);
+    } finally {
+      setIsLoading(false); // Reset loading state
     }
   };
 
@@ -59,7 +65,9 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-md w-full mx-4">
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Add New Student</h2>
+          <h2 className="text-xl font-semibold">
+            {t("admin.modals.add.title")}
+          </h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X className="h-5 w-5" />
           </button>
@@ -68,7 +76,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name
+              {t("admin.modals.student.name")}
             </label>
             <input
               type="text"
@@ -83,7 +91,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date of Birth
+              {t("admin.modals.student.dob")}
             </label>
             <DatePicker
               value={formData.dob ? new Date(formData.dob) : new Date()}
@@ -99,7 +107,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Class
+              {t("admin.modals.student.class")}
             </label>
             <input
               type="text"
@@ -114,7 +122,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Class Teacher
+              {t("admin.modals.student.class_teacher")}
             </label>
             <input
               type="text"
@@ -133,7 +141,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Guardian Name
+              {t("admin.modals.student.guardian_name")}
             </label>
             <input
               type="text"
@@ -151,7 +159,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Guardian Mobile
+              {t("admin.modals.student.guardian_mob")}
             </label>
             <input
               type="tel"
@@ -171,7 +179,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Guardian Email
+              {t("admin.modals.student.guardian_mail")}
             </label>
             <input
               type="email"
@@ -189,7 +197,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Gender
+              {t("admin.modals.student.gender")}
             </label>
             <select
               value={formData.student_gender}
@@ -202,16 +210,21 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: Props) {
               className="w-full border rounded-lg p-2"
               required
             >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="Male">
+                {t("admin.modals.student.gender_male")}
+              </option>
+              <option value="Female">
+                {t("admin.modals.student.gender_female")}
+              </option>
             </select>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+            disabled={isLoading}
+            className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 disabled:bg-gray-400"
           >
-            Create Student
+            {isLoading ? t("form.creating") : t("form.submit")}
           </button>
         </form>
       </div>

@@ -15,6 +15,7 @@ import { AddMarksModal } from "../components/modals/AddMarksModal";
 import { AddStudentModal } from "../components/modals/AddStudentModal";
 import { ModifyStudentModal } from "../components/modals/ModifyStudentModal";
 import { AddEventModal } from "../components/modals/AddEventModal";
+import { useTranslation } from "react-i18next";
 
 interface StudentScore {
   student_id: string;
@@ -26,6 +27,7 @@ interface StudentScore {
 }
 
 function AdminPanel() {
+  const { t } = useTranslation();
   const [studentCount, setStudentCount] = useState(0);
   const [selectedSubject, setSelectedSubject] = useState<string>("average");
   const [leaderboard, setLeaderboard] = useState<StudentScore[]>([]);
@@ -210,31 +212,37 @@ function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Panel</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">
+        {t("admin.title")}
+      </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center mb-4">
             <Users className="h-8 w-8 text-indigo-600" />
-            <h2 className="text-xl font-semibold ml-2">Students</h2>
+            <h2 className="text-xl font-semibold ml-2">
+              {t("admin.students")}
+            </h2>
           </div>
           <p className="text-3xl font-bold text-gray-900">{studentCount}</p>
-          <p className="text-sm text-gray-600">Total Students</p>
+          <p className="text-sm text-gray-600">{t("admin.total.students")}</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center mb-4">
             <CalendarIcon className="h-8 w-8 text-blue-600" />
-            <h2 className="text-xl font-semibold ml-2">Events</h2>
+            <h2 className="text-xl font-semibold ml-2">{t("admin.events")}</h2>
           </div>
           <p className="text-3xl font-bold text-gray-900">{eventCount}</p>
-          <p className="text-sm text-gray-600">Total Events</p>
+          <p className="text-sm text-gray-600">{t("admin.total.events")}</p>
         </div>
       </div>
 
       {/* Quick Actions Panel */}
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-6">
+          {t("admin.quick.actions")}
+        </h2>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <button
             onClick={() => setActiveModal("add")}
@@ -244,8 +252,12 @@ function AdminPanel() {
               <UserPlus className="h-6 w-6 text-indigo-600 group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h3 className="font-semibold text-indigo-900">Add Student</h3>
-              <p className="text-sm text-indigo-600">Register new student</p>
+              <h3 className="font-semibold text-indigo-900">
+                {t("admin.actions.add.student")}
+              </h3>
+              <p className="text-sm text-indigo-600">
+                {t("admin.actions.add.desc")}
+              </p>
             </div>
           </button>
 
@@ -257,8 +269,12 @@ function AdminPanel() {
               <UserMinus className="h-6 w-6 text-red-600 group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h3 className="font-semibold text-red-900">Delete Student</h3>
-              <p className="text-sm text-red-600">Remove student record</p>
+              <h3 className="font-semibold text-red-900">
+                {t("admin.actions.delete.student")}
+              </h3>
+              <p className="text-sm text-red-600">
+                {t("admin.actions.delete.desc")}
+              </p>
             </div>
           </button>
 
@@ -270,9 +286,11 @@ function AdminPanel() {
               <UserCog className="h-6 w-6 text-purple-600 group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h3 className="font-semibold text-purple-900">Modify Details</h3>
+              <h3 className="font-semibold text-purple-900">
+                {t("admin.actions.modify.student")}
+              </h3>
               <p className="text-sm text-purple-600">
-                Update student information
+                {t("admin.actions.modify.desc")}
               </p>
             </div>
           </button>
@@ -285,8 +303,12 @@ function AdminPanel() {
               <GraduationCap className="h-6 w-6 text-green-600 group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h3 className="font-semibold text-green-900">Add Marks</h3>
-              <p className="text-sm text-green-600">Enter assessment scores</p>
+              <h3 className="font-semibold text-green-900">
+                {t("admin.actions.add.marks")}
+              </h3>
+              <p className="text-sm text-green-600">
+                {t("admin.actions.marks.desc")}
+              </p>
             </div>
           </button>
 
@@ -298,8 +320,12 @@ function AdminPanel() {
               <CalendarPlus className="h-6 w-6 text-blue-600 group-hover:scale-110 transition-transform" />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900">Create Event</h3>
-              <p className="text-sm text-blue-600">Schedule new event</p>
+              <h3 className="font-semibold text-blue-900">
+                {t("admin.actions.create.event")}
+              </h3>
+              <p className="text-sm text-blue-600">
+                {t("admin.actions.event.desc")}
+              </p>
             </div>
           </button>
         </div>
@@ -339,7 +365,7 @@ function AdminPanel() {
       <div className="bg-white rounded-lg shadow-md p-6 mt-10">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            Student Leaderboard
+            {t("admin.leaderboard")}
           </h2>
           <div className="flex gap-2">
             {subjects.map((subject) => (

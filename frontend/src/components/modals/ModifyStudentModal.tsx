@@ -3,6 +3,7 @@ import { X, ChevronLeft } from "lucide-react";
 import { format } from "date-fns";
 import ApiService from "../../services/api";
 import { DatePicker } from "../DatePicker";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export function ModifyStudentModal({
   onSuccess,
   students,
 }: Props) {
+  const { t } = useTranslation();
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string;
     name: string;
@@ -126,7 +128,9 @@ export function ModifyStudentModal({
               </button>
             )}
             <h2 className="text-xl font-semibold">
-              {selectedStudent ? "Modify Student Details" : "Select Student"}
+              {selectedStudent
+                ? t("admin.modals.modify.title")
+                : t("admin.modals.select.student")}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
@@ -138,7 +142,7 @@ export function ModifyStudentModal({
           <form onSubmit={handleModify} className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
+                {t("admin.modals.student.name")}
               </label>
               <input
                 type="text"
@@ -153,7 +157,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date of Birth
+                {t("admin.modals.student.dob")}
               </label>
               <DatePicker
                 value={formData.dob ? new Date(formData.dob) : new Date()}
@@ -169,7 +173,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class
+                {t("admin.modals.student.class")}
               </label>
               <input
                 type="text"
@@ -184,7 +188,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class Teacher
+                {t("admin.modals.student.class_teacher")}
               </label>
               <input
                 type="text"
@@ -202,7 +206,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Guardian Name
+                {t("admin.modals.student.guardian_name")}
               </label>
               <input
                 type="text"
@@ -220,7 +224,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Guardian Mobile
+                {t("admin.modals.student.guardian_mob")}
               </label>
               <input
                 type="tel"
@@ -238,7 +242,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Guardian Email
+                {t("admin.modals.student.guardian_mail")}
               </label>
               <input
                 type="email"
@@ -256,7 +260,7 @@ export function ModifyStudentModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
+                {t("admin.modals.student.gender")}
               </label>
               <select
                 value={formData.student_gender}
@@ -269,18 +273,31 @@ export function ModifyStudentModal({
                 className="w-full border rounded-lg p-2"
                 required
               >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="">{t("admin.modals.select.gender")}</option>
+                <option value="Male">
+                  {t("admin.modals.student.gender_male")}
+                </option>
+                <option value="Female">
+                  {t("admin.modals.student.gender_female")}
+                </option>
               </select>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
-            >
-              Update Student Details
-            </button>
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                {t("form.cancel")}
+              </button>
+              <button
+                type="submit"
+                className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
+              >
+                {t("form.save")}
+              </button>
+            </div>
           </form>
         ) : (
           <div className="p-6">

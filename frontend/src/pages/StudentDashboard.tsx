@@ -33,11 +33,13 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../store/index";
+import { useTranslation } from "react-i18next";
 
 const audioBaseUrl = import.meta.env.VITE_API_BASE_URL + "/generate_audio";
 
 function StudentDashboard() {
   const user = useAppStore((state) => state.user);
+  const { t } = useTranslation();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
     null
   );
@@ -187,7 +189,7 @@ function StudentDashboard() {
           setAttendanceSummary(null);
         }
 
-        // Handle events data
+        // Handle events data - REVERT BACK TO UPCOMING EVENTS ONLY
         const cachedEvents = localStorage.getItem("cache_GET_/get_events");
         let eventsData;
 
@@ -471,11 +473,12 @@ function StudentDashboard() {
     return (
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Select a Student
+          {t("dashboard.select_student")}
         </h1>
         {isLoadingStudents ? (
           <div className="flex items-center justify-center h-48">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+            <span>{t("loading")}</span>
           </div>
         ) : studentsList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -493,9 +496,7 @@ function StudentDashboard() {
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-8">
-            No students found
-          </div>
+          <div className="text-center text-gray-500 py-8">{t("noData")}</div>
         )}
       </div>
     );
@@ -505,6 +506,7 @@ function StudentDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+        <span>{t("loading")}</span>
       </div>
     );
   }
@@ -512,7 +514,9 @@ function StudentDashboard() {
   const remarksSection = (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Recent Remarks</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          {t("dashboard.remarks")}
+        </h2>
         {user?.role === "teacher" && (
           <button
             onClick={() => {
@@ -527,11 +531,11 @@ function StudentDashboard() {
           >
             {isEditingRemark ? (
               <>
-                <Save size={16} /> Save
+                <Save size={16} /> {t("save")}
               </>
             ) : (
               <>
-                <Edit2 size={16} /> Edit
+                <Edit2 size={16} /> {t("edit")}
               </>
             )}
           </button>
@@ -551,14 +555,16 @@ function StudentDashboard() {
               ) : (
                 <>
                   <p className="text-gray-600">
-                    {studentProfile?.Remark || "No remarks"}
+                    {studentProfile?.Remark || t("dashboard.no.remarks")}
                   </p>
                   {studentProfile?.Remark && (
                     <>
                       <p className="text-sm text-gray-500">
-                        {studentProfile.class_teacher} - Class Teacher
+                        {studentProfile.class_teacher} - {t("class_teacher")}
                       </p>
-                      <p className="text-xs text-gray-400">Latest Remark</p>
+                      <p className="text-xs text-gray-400">
+                        {t("latest_remark")}
+                      </p>
                     </>
                   )}
                 </>
@@ -598,7 +604,7 @@ function StudentDashboard() {
             </button>
           )}
           <h1 className="text-3xl font-bold text-gray-900">
-            Student Dashboard
+            {t("dashboard.title")}
           </h1>
         </div>
 
@@ -606,12 +612,16 @@ function StudentDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center mb-4">
               <GraduationCap className="h-8 w-8 text-indigo-400" />
-              <h2 className="text-xl font-semibold ml-2">Academic Progress</h2>
+              <h2 className="text-xl font-semibold ml-2">
+                {t("dashboard.academic.progress")}
+              </h2>
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              {currentAverage ? `${currentAverage}%` : "N/A"}
+              {currentAverage ? `${currentAverage}%` : t("noData")}
             </p>
-            <p className="text-sm text-gray-600">Current Average</p>
+            <p className="text-sm text-gray-600">
+              {t("dashboard.current.average")}
+            </p>
           </div>
 
           <Link
@@ -622,16 +632,22 @@ function StudentDashboard() {
           >
             <div className="flex items-center mb-4">
               <UserCheck className="h-8 w-8 text-green-600" />
-              <h2 className="text-xl font-semibold ml-2">Attendance</h2>
+              <h2 className="text-xl font-semibold ml-2">
+                {t("dashboard.attendance")}
+              </h2>
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              {attendanceSummary ? `${attendanceSummary.presentRate}%` : "N/A"}
+              {attendanceSummary
+                ? `${attendanceSummary.presentRate}%`
+                : t("noData")}
             </p>
-            <p className="text-sm text-gray-600">Present Days</p>
+            <p className="text-sm text-gray-600">
+              {t("dashboard.present.days")}
+            </p>
             {attendanceSummary && (
               <p className="text-xs text-gray-500 mt-1">
-                {attendanceSummary.presentDays} out of{" "}
-                {attendanceSummary.totalDays} days
+                {attendanceSummary.presentDays} {t("out of")}{" "}
+                {attendanceSummary.totalDays} {t("days")}
               </p>
             )}
           </Link>
@@ -639,19 +655,23 @@ function StudentDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center mb-4">
               <Calendar className="h-8 w-8 text-blue-400" />
-              <h2 className="text-xl font-semibold ml-2">Upcoming</h2>
+              <h2 className="text-xl font-semibold ml-2">
+                {t("dashboard.upcoming")}
+              </h2>
             </div>
             <p className="text-lg font-medium text-gray-900">
-              {eventCount} {eventCount === 1 ? "Event" : "Events"}
+              {eventCount} {t("dashboard.upcoming.events")}
             </p>
-            <p className="text-sm text-gray-600">Total Events</p>
+            <p className="text-sm text-gray-600">
+              {t("dashboard.upcoming.description")}
+            </p>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
-              Subject Performance Trends
+              {t("dashboard.performance")}
             </h2>
             <div className="flex gap-4">
               {subjects.map((subject) => (
@@ -703,9 +723,7 @@ function StudentDashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-8">
-              No performance data available
-            </div>
+            <div className="text-center text-gray-500 py-8">{t("noData")}</div>
           )}
         </div>
         {remarksSection}

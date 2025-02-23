@@ -15,18 +15,23 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       user: null,
-      language: "en",
+      language: "en", // Always default to English
       isOffline: false,
       setUser: (user) => set({ user }),
-      setLanguage: (language) => set({ language }),
+      setLanguage: (lang) => {
+        // Update both store and localStorage
+        set({ language: lang });
+        localStorage.setItem("app_language", lang);
+      },
       setIsOffline: (isOffline) => set({ isOffline }),
+      clearUser: () => set({ user: null }),
     }),
     {
-      name: "app-storage", // unique name for localStorage key
+      name: "app-store",
       partialize: (state) => ({
         user: state.user,
-        language: state.language,
-      }), // only persist these fields
+        // Do not persist language state
+      }),
     }
   )
 );

@@ -24,3 +24,15 @@ class Attendance(BaseModel):
     student_id: int
     attendance_date: Annotated[str, StringConstraints(pattern=r"\d{4}-\d{2}-\d{2}")]
     attendance_status: Literal["P", "A"]
+
+
+class Event(BaseModel):
+    title: str
+    event_desc : str
+    date: Annotated[str, StringConstraints(pattern=r"\d{4}-\d{2}-\d{2}")]
+    time :Annotated[str, StringConstraints(pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$")]
+
+class chatbot_response(BaseModel):
+    question: str
+    student_id: int
+

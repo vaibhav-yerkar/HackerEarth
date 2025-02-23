@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Trash2, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ApiService from "../../services/api";
 
 interface Props {
@@ -15,6 +16,7 @@ export function DeleteStudentModal({
   onSuccess,
   students,
 }: Props) {
+  const { t } = useTranslation();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string;
@@ -67,7 +69,9 @@ export function DeleteStudentModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-md w-full mx-4">
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Delete Student</h2>
+          <h2 className="text-xl font-semibold">
+            {t("admin.modals.delete.title")}
+          </h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X className="h-5 w-5" />
           </button>
@@ -78,9 +82,13 @@ export function DeleteStudentModal({
             <div className="flex items-center gap-4 mb-6">
               <AlertCircle className="h-12 w-12 text-red-500" />
               <div>
-                <h3 className="font-semibold text-lg">Confirm Deletion</h3>
+                <h3 className="font-semibold text-lg">
+                  {t("admin.modals.confirm.delete")}
+                </h3>
                 <p className="text-gray-600">
-                  Are you sure you want to delete {selectedStudent?.name}?
+                  {t("admin.modals.confirm.delete.message", {
+                    name: selectedStudent?.name,
+                  })}
                 </p>
               </div>
             </div>
@@ -89,13 +97,13 @@ export function DeleteStudentModal({
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
               >
-                Cancel
+                {t("form.cancel")}
               </button>
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
               >
-                Delete
+                {t("admin.actions.delete.student")}
               </button>
             </div>
           </div>

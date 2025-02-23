@@ -25,6 +25,7 @@ import ApiService from "../services/api";
 import { EventResponse } from "../types";
 import { useAppStore } from "../store/index";
 import { AudioCache } from "../services/audioCache";
+import { useTranslation } from "react-i18next";
 
 interface Event {
   id: string;
@@ -37,6 +38,7 @@ interface Event {
 const audioBaseUrl = import.meta.env.VITE_API_BASE_URL + "/generate_audio";
 
 function Calendar() {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
@@ -194,6 +196,7 @@ function Calendar() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-400"></div>
+        <span>{t("loading")}</span>
       </div>
     );
   }
@@ -212,7 +215,9 @@ function Calendar() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          {t("calendar.title")}
+        </h1>
         <div className="flex items-center gap-4">
           <button
             onClick={handlePrevMonth}
@@ -275,7 +280,9 @@ function Calendar() {
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
               <CalendarIcon className="h-4 w-4 mr-2 text-blue-600" />
-              Events for {format(selectedDate, "MMMM d, yyyy")}
+              {t("calendar.events.for", {
+                date: format(selectedDate, "MMMM d, yyyy"),
+              })}
             </h2>
             <div className="space-y-3">
               {getEventsForDate(selectedDate).length > 0 ? (
@@ -321,7 +328,9 @@ function Calendar() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm">No events for this date</p>
+                <p className="text-gray-500 text-sm">
+                  {t("calendar.no.events")}
+                </p>
               )}
             </div>
           </div>
