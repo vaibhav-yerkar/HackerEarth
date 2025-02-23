@@ -135,6 +135,9 @@ The frontend of the Parental Engagement System is built using React, TypeScript,
 - **Email Integration:**  
   Announcements and event notifications are also integrated using EmailJS. The script is loaded on-demand in the [AddEventModal](frontend/src/components/modals/AddEventModal.tsx) to initialize email functionalities.
 
+- **Multi-Language Support:**  
+  Built with internationalization (i18next), the application supports multiple languages. The language toggle is available via the [LanguageToggle component](frontend/src/components/LanguageToggle.tsx), allowing users to switch between English and Hindi seamlessly. Translation files are managed in [i18n.ts](frontend/src/i18n.ts).
+
 ### Project Structure
 
 The key directories and files are as follows:
@@ -210,5 +213,4 @@ The key directories and files are as follows:
 The frontend is designed to interact seamlessly with the backend API (see backend/app.py), ensuring that both parents and teachers have an intuitive and responsive experience. This modular structure along with real-time updates and offline support makes it robust and scalable for future enhancements.
 
 **Developed with a focus on keeping parents informed and connected with their child’s education.**
-
 **This documentation can be updated further as new features are added.**
