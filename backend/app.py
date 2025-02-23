@@ -3,6 +3,7 @@ import os
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from modules.audio_notes import AudioNotes
@@ -14,6 +15,21 @@ app = FastAPI(title="Student Management API")
 chatbot = ParentalMonitoringSystem()
 db = Database()
 audio_notes = AudioNotes()
+
+origins = [
+    "https://hacker-earth.vercel.app",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
